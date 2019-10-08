@@ -3,10 +3,8 @@
     "containerDefinitions": [
         {
             "name": "Contenedor-Aylin",
-            "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest",
-            "repositoryCredentials": {
-                "credentialsParameter": ""
-            }
+            "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest"
+           
         }
     ]
 }
