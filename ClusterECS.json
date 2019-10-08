@@ -3,8 +3,10 @@
     "containerDefinitions": [
         {
             "name": "Contenedor-Aylin",
-            "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest"
-           
+            "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest",
+            "cpu": 0,
+            "memory": 0,
+            "memoryReservation": 0
         }
     ]
 }
