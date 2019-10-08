@@ -2,7 +2,7 @@
     "family": "Task-Docker-Aylin",
     "containerDefinitions": [
         {
-            "name": "Contenedor-Aylin",
+            "name": "Container-Aylin",
             "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest",
             "memoryReservation": 300
         }
