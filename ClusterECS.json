@@ -4,7 +4,23 @@
         {
             "name": "Container-Aylin",
             "image": "492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest",
-            "memoryReservation": 300
+            "memoryReservation": 300,
+            "portMappings": [
+                {
+                    "containerPort": 0,
+                    "hostPort": 5000,
+                    "protocol": "tcp"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "secretOptions": null,
+                "options": {
+                  "awslogs-group": "/ecs/Task-Docker-Aylin",
+                  "awslogs-region": "us-west-2",
+                  "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
     ]
 }
