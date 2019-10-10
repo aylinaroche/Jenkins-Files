@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+    environment {
+        PATH = "$PATH:/usr/local/bin/"
+    }
+    stages {
+        stage('CloneGit') {
+            steps {
+                sh "git --version"
+                sh "mkdir -p Docker"
+                dir('/var/lib/jenkins/workspace/Pipeline-Docker/Docker'){
+                    git credentialsId: 'oli', url: 'git@github.com:aylinaroche/Docker-Files.git'
+                }
+                sh "mkdir -p Jenkins"
+                dir('/var/lib/jenkins/workspace/Pipeline-Docker/Jenkins'){
+                    git credentialsId: 'oli', url: 'git@github.com:aylinaroche/Jenkins-Files.git'
+                }
+                echo 'SUCCESSFUL CLONE GIT..'
+            }
+        }
+        stage('Build') {
+            steps {
+                dir('/var/lib/jenkins/workspace/Pipeline-Docker/Docker/flask'){
+                    sh """
+                        ls
+                        docker build -t 'repository-aylin' .
+                        docker images
+                    """
+                }
+                echo 'SUCCESSFUL BUILD..'
+            }
+        }
+        stage('Upload') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWSCredentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+
+                    sh """
+                        export AWS_ACCESS_KEY_ID="ASIAXFHK42N5MOT54IGY"
+                        export AWS_SECRET_ACCESS_KEY="29EjvucfGrwQIqKcC+n/y3fCuJwdk1oLyVB7dUp5"
+                        export AWS_SESSION_TOKEN="AgoJb3JpZ2luX2VjEML//////////wEaCXVzLXdlc3QtMiJGMEQCIFJjun1ya9Q0Tnwv9tSBg8GbFV16K4OHIeGEpV1tPW2VAiBBZFNLNSbx+nk1eeQ3SypkMgQCOXrg+8R90ILH+oaEcSrZAgir//////////8BEAEaDDQ5MjI2NjM3ODEwNiIMeM6u/KbdMc03/8VzKq0CQ1Csn45Qh0bdsXF/THMM2sfTkkelCBDu14u7/XcgdsgLEfBSYEeLdpqkP3ngm3WwYfNmhiSPcA+DUEXqJsbcdPduRM5tiFtWh50pj0UNfOAD/IbWmQttBfgTMzrQwk6b6V5jCuZ82G/TtWD5N1a9OymbmpJWiwSVFyWQmpT0iZ0MAFse+RDtU7sJaW9Me13zvI3LaqF6rxIW3LFSXgtN/lznqgRU6I9yUKhhV9nigwqILEGzzsV02Qw/Svr50A2GMSOyksNdGIL5iO4EiSin49pt0g7jGjVSEdvYDqlmH2Z8sGLJVo0/n1vVjK3KCnF/UxmdQ49Q+EI45NXuILt1NFVYXUz/lx65rBgOrLU11NbGZyy1G0i5nCV3Q9AG93P+Jui2F3TRCzaHOQXe4zDewvjsBTq1Ae12cSjg4ncYbrSYENj0NeIH5GrvZ0jfm/uAQoxjtmYwDZhf3NiMZDZII/qDd6KWGQ1LnD9Sy5mrE9qKXechuc5CTEl+kitUH946onyMx9kdPF3ye9sEovNtOlAxmKmTjDadz7dCxlw65fW0KciXdCmmeT4d691V54qf/PD+xDTttX+kQYJII8QV4Ux+wnyQt0DNf1U8xW9jcClatmbgKkdvBHXep1mJ6V1QcBzOT9JPlsMoIz0="
+                        export AWS_DEFAULT_REGION=us-west-2
+                        \$(aws ecr get-login --no-include-email --region us-west-2)
+                        docker tag repository-aylin:latest 492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest
+                        docker push 492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest
+                    """
+                    echo 'SUCCESSFUL UPLOAD..'
+                }
+            }
+        }
+        stage('Cluster') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWSCredentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    dir('/var/lib/jenkins/workspace/Pipeline-Docker/Jenkins'){
+                        sh """
+                        export AWS_ACCESS_KEY_ID="ASIAXFHK42N5MOT54IGY"
+                        export AWS_SECRET_ACCESS_KEY="29EjvucfGrwQIqKcC+n/y3fCuJwdk1oLyVB7dUp5"
+                        export AWS_SESSION_TOKEN="AgoJb3JpZ2luX2VjEML//////////wEaCXVzLXdlc3QtMiJGMEQCIFJjun1ya9Q0Tnwv9tSBg8GbFV16K4OHIeGEpV1tPW2VAiBBZFNLNSbx+nk1eeQ3SypkMgQCOXrg+8R90ILH+oaEcSrZAgir//////////8BEAEaDDQ5MjI2NjM3ODEwNiIMeM6u/KbdMc03/8VzKq0CQ1Csn45Qh0bdsXF/THMM2sfTkkelCBDu14u7/XcgdsgLEfBSYEeLdpqkP3ngm3WwYfNmhiSPcA+DUEXqJsbcdPduRM5tiFtWh50pj0UNfOAD/IbWmQttBfgTMzrQwk6b6V5jCuZ82G/TtWD5N1a9OymbmpJWiwSVFyWQmpT0iZ0MAFse+RDtU7sJaW9Me13zvI3LaqF6rxIW3LFSXgtN/lznqgRU6I9yUKhhV9nigwqILEGzzsV02Qw/Svr50A2GMSOyksNdGIL5iO4EiSin49pt0g7jGjVSEdvYDqlmH2Z8sGLJVo0/n1vVjK3KCnF/UxmdQ49Q+EI45NXuILt1NFVYXUz/lx65rBgOrLU11NbGZyy1G0i5nCV3Q9AG93P+Jui2F3TRCzaHOQXe4zDewvjsBTq1Ae12cSjg4ncYbrSYENj0NeIH5GrvZ0jfm/uAQoxjtmYwDZhf3NiMZDZII/qDd6KWGQ1LnD9Sy5mrE9qKXechuc5CTEl+kitUH946onyMx9kdPF3ye9sEovNtOlAxmKmTjDadz7dCxlw65fW0KciXdCmmeT4d691V54qf/PD+xDTttX+kQYJII8QV4Ux+wnyQt0DNf1U8xW9jcClatmbgKkdvBHXep1mJ6V1QcBzOT9JPlsMoIz0="
+                        export AWS_DEFAULT_REGION=us-west-2    
+                            aws ecs list-clusters
+                            aws ecs register-task-definition --cli-input-json file://ClusterECS.json                    
+                            aws ecs update-service \
+                                --cluster myCluster-Aylin \
+                                --service MyServiceAylin \
+                                --task-definition Task-Docker-Aylin \
+                                --desired-count 1 
+                        """
+                    }
+                    echo 'SUCCESSFUL UPLOAD..'
+                }
+            }
+        }
+
+
+    }
+
+}

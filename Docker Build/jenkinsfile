@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+    environment {
+        PATH = "$PATH:/usr/local/bin/"
+    }
+    stages {
+        stage('CloneGit') {
+            steps {
+                sh "git --version"
+                git credentialsId: 'oli', url: 'git@github.com:aylinaroche/Docker-Files.git'
+                echo 'SUCCESSFUL CLONE GIT..'
+            }
+        }
+        stage('Test') {
+            steps {
+                dir('/var/lib/jenkins/workspace/Pipeline-Github/Tests'){
+                    sh "docker-compose run dockerizando python test.py"
+                }
+                sh "docker images"
+                echo 'SUCCESSFUL TEST..'
+            }
+        }
+        stage('Build') {
+            steps {
+                dir('/var/lib/jenkins/workspace/Pipeline-Github/awscli'){
+                    sh "docker build -t 'repository-aylin' ."
+                }
+                sh "docker images"
+                echo 'SUCCESSFUL BUILD..'
+            }
+        }
+        stage('Upload') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWSCredentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+
+                    sh """
+                        export AWS_ACCESS_KEY_ID="YOUR_AWS_ACCESS_KEY_ID"
+                        export AWS_SECRET_ACCESS_KEY="YOUR_AWS_SECRET_ACCESS_KEY"
+                        export AWS_SESSION_TOKEN="AWS_AWS_SESSION_TOKEN"
+                        \$(aws ecr get-login --no-include-email --region us-west-2)
+                        docker tag repository-aylin:latest 492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest
+                        docker push 492266378106.dkr.ecr.us-west-2.amazonaws.com/repository-aylin:latest
+                    """
+                    echo 'SUCCESSFUL UPLOAD..'
+                }
+            }
+        }
+    }
+
+}
